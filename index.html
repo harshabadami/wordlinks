@@ -62,12 +62,6 @@ main{max-width:560px; margin:0 auto; padding:16px 16px 40px;}
 #msg{min-height:22px; text-align:center; font-size:14px; color:var(--muted); margin:6px 0;}
 #msg.err{color:#dc2626;}
 #msg.good{color:var(--good);}
-.kb{display:flex; flex-direction:column; gap:6px; margin:8px 0;}
-.kb-row{display:flex; gap:6px; justify-content:center;}
-.key{flex:1; max-width:44px; padding:10px 0; border:1px solid var(--line); border-radius:8px;
-  background:var(--card); font-size:16px; font-weight:600;}
-.key.hit{background:#dcfce7; border-color:#86efac; color:var(--good);}
-.key.miss{background:#f3f4f6; color:#cbd5e1;}
 .guess-row{display:flex; gap:8px; margin-top:8px;}
 .guess-row input{flex:1; font-size:17px; padding:11px 12px; border:2px solid var(--line);
   border-radius:12px; text-transform:lowercase;}
@@ -123,7 +117,6 @@ footer.site{text-align:center; color:var(--muted); font-size:12px; padding:18px;
     </div>
     <div class="chain" id="chain"></div>
     <div id="msg"></div>
-    <div class="kb" id="kb"></div>
     <div class="guess-row">
       <input id="guess-input" type="text" placeholder="Guess the whole word…" autocomplete="off"
         autocapitalize="off" spellcheck="false" maxlength="14">
@@ -143,8 +136,7 @@ footer.site{text-align:center; color:var(--muted); font-size:12px; padding:18px;
     <ol class="howto-list">
       <li>Each puzzle is a <b>chain of words</b>. The first and last words are given.</li>
       <li>Every neighboring pair forms a <b>compound word or phrase</b> — like <i>hot dog</i>, <i>dog house</i>.</li>
-      <li>Tap a blank word, then <b>guess letters</b> on the keyboard, or <b>type the whole word</b>.</li>
-      <li>Stuck? Tap <b>Hint</b> to reveal one letter at a time.</li>
+      <li>Tap a blank word, then tap <b>Hint</b> to reveal letters one at a time — or <b>type the whole word</b> when it clicks.</li>
       <li>A clean solve is worth <b>100 points</b>. Each revealed letter costs <b>8 points</b> (min 10).</li>
       <li>Solve every link to finish the chain. Fewer hints, more stars.</li>
     </ol>
@@ -303,7 +295,6 @@ function startPuzzle(src){
     src: src, words: words,
     revealed: words.map((_, i) => i === 0 || i === n-1),
     letters: words.map(() => new Set()),
-    misses: words.map(() => new Set()),
     givenUp: words.map(() => false),
     score: words.map((_, i) => (i === 0 || i === n-1) ? 0 : 100),
     selected: 1,
@@ -361,28 +352,6 @@ function renderPlay(){
       chain.appendChild(lp);
     }
   });
-  renderKb();
-}
-
-function renderKb(){
-  const kb = $("kb"); kb.innerHTML = "";
-  const rows = ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
-  const i = G.selected;
-  rows.forEach(r => {
-    const div = document.createElement("div");
-    div.className = "kb-row";
-    r.split("").forEach(ch => {
-      const b = document.createElement("button");
-      const L = ch.toLowerCase();
-      b.className = "key" +
-        (G.letters[i].has(L) ? " hit" : "") +
-        (G.misses[i].has(L) ? " miss" : "");
-      b.textContent = ch;
-      b.onclick = () => onLetter(L);
-      div.appendChild(b);
-    });
-    kb.appendChild(div);
-  });
 }
 
 function revealLetter(i, L){
@@ -395,22 +364,6 @@ function revealLetter(i, L){
 }
 function wordComplete(i){
   return [...G.words[i]].every(ch => G.letters[i].has(ch));
-}
-
-function onLetter(L){
-  const i = G.selected;
-  if (G.revealed[i]) return;
-  const w = G.words[i];
-  if (G.letters[i].has(L) || G.misses[i].has(L)) return;
-  if (w.includes(L)){
-    const count = revealLetter(i, L);
-    setMsg("Nice — “" + L.toUpperCase() + "” × " + count + " (−" + (8*count) + " pts)", "good");
-    if (wordComplete(i)) solveWord(i, true);
-    else renderPlay();
-  } else {
-    G.misses[i].add(L);
-    renderPlay();
-  }
 }
 
 function giveHint(){
